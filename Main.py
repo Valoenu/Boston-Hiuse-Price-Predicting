@@ -1,50 +1,60 @@
-# 📦 Import Libraries
+# 📌 Project: Boston House Price Prediction (App Brewery Bootcamp Project)
+
+# 🔹 Standard Libraries
 import pandas as pd
 import numpy as np
+
+# 🔹 Visualization Libraries
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
-import scipy.stats as stats
+
+# 🔹 Machine Learning & Stats
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from scipy import stats
 
-# 📂 Load Dataset
-# Make sure House_Price_Boston.csv is in the same directory as this script
+# 🔹 Load Data
 data = pd.read_csv('House_Price_Boston.csv', index_col=0)
 
-# 🧼 Inspect & Clean Data
-print(data.head())                          # Preview top rows
-print(data.tail())                          # Preview bottom rows
-print(data.isna().sum().sum())              # Count missing values
-print(data.duplicated().sum())              # Count duplicates
-data.dropna(inplace=True)                   # Drop missing values (if any)
+# Inspect data
+print(data.head())
+print(data.tail())
+print(f'NaN values: {data.isna().sum().sum()}')
+print(f'Duplicated rows: {data.duplicated().sum()}')
 
-# 🔍 Quick Stats
+# Drop missing values (if any)
+data = data.dropna()
+
+# Basic stats
+print(data.shape)
 print(data.describe())
-print(f"Dataset shape: {data.shape}")
-print(f"Average PTRATIO: {data['PTRATIO'].mean():.2f}")
-print(f"Average house price: ${data['PRICE'].mean():.2f}")
-print(f"Min CHAS: {data['CHAS'].min()}, Max CHAS: {data['CHAS'].max()}")
-print(f"Rooms per dwelling → min: {data['RM'].min()}, max: {data['RM'].max()}")
+print(data.columns)
 
-# 📊 Visualize Distributions
-for col in ['PRICE', 'RM', 'DIS', 'RAD']:
-    sns.displot(data[col], kde=True, aspect=2)
+# 🔹 Descriptive Stats
+print("Average students per teacher:", data['PTRATIO'].mean())
+print("Average home price:", data['PRICE'].mean())
+print("CHAS values (0 = not near river, 1 = near river):", data['CHAS'].unique())
+print("Max rooms:", data['RM'].max())
+print("Min rooms:", data['RM'].min())
+
+# 🔹 Visualization: Distribution Plots
+selected = ['PRICE', 'RM', 'DIS', 'RAD']
+for col in selected:
+    sns.displot(data[col], kde=True)
     plt.title(f'Distribution of {col}')
     plt.show()
 
-# 🏞 Properties near Charles River
-chas_count = data['CHAS'].value_counts().reset_index()
-chas_count.columns = ['CHAS', 'Count']
-chas_count['CHAS'] = chas_count['CHAS'].map({0: 'No', 1: 'Yes'})
-px.bar(chas_count, x='CHAS', y='Count', title='Next to Charles River').show()
+# 🔹 Bar Chart: River Proximity
+river_bar = data['CHAS'].value_counts().rename({0: 'No', 1: 'Yes'})
+px.bar(river_bar, title='Properties Next to the Charles River').show()
 
-# 🔗 Relationships between variables
+# 🔹 Pairplot: Relationships
 sns.pairplot(data[['NOX', 'DIS', 'RM', 'PRICE', 'LSTAT']])
-plt.suptitle("Pairplot: Key Features", y=1.02)
+plt.suptitle('Relationship Between Features', y=1.02)
 plt.show()
 
-# 🧠 Key Jointplots
+# 🔹 Jointplots
 sns.jointplot(data=data, x='DIS', y='NOX', kind='scatter')
 sns.jointplot(data=data, x='INDUS', y='NOX', kind='scatter')
 sns.jointplot(data=data, x='LSTAT', y='RM', kind='scatter')
@@ -52,88 +62,119 @@ sns.jointplot(data=data, x='LSTAT', y='PRICE', kind='scatter')
 sns.jointplot(data=data, x='RM', y='PRICE', kind='scatter')
 plt.show()
 
-# 📈 Feature/Target split
+# 🔹 Prepare Data for Modeling
 X = data.drop(columns=['PRICE'])
 y = data['PRICE']
 
-# 🎲 Split into Train/Test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=10)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=10)
 
-# 🧠 Train Model
+# 🔹 Train Linear Regression Model
 model = LinearRegression()
 model.fit(X_train, y_train)
 
-# 📋 Results
-print(f"Model R² score: {model.score(X_train, y_train):.3f}")
-print("Model coefficients:", model.coef_)
+print("R² on training data:", model.score(X_train, y_train))
 print("Intercept:", model.intercept_)
+print("Coefficients:", model.coef_)
 
-# 🔍 Predictions and residuals
-y_pred = model.predict(X_train)
-residuals = y_train - y_pred
+# 🔹 Predictions and Residuals
+pred_train = model.predict(X_train)
+residuals = y_train - pred_train
 
-# 🎯 Actual vs Predicted
-sns.scatterplot(x=y_train, y=y_pred)
+# 🔹 Scatterplots for Actual vs Predicted
+sns.scatterplot(x=y_train, y=pred_train, color='skyblue')
 plt.xlabel("Actual Prices")
 plt.ylabel("Predicted Prices")
 plt.title("Actual vs Predicted Prices")
 plt.show()
 
-# 📉 Residuals Plot
-sns.scatterplot(x=y_pred, y=residuals)
+sns.scatterplot(x=pred_train, y=residuals, color='purple')
 plt.xlabel("Predicted Prices")
 plt.ylabel("Residuals")
-plt.title("Residuals vs Predicted")
+plt.title("Residuals vs Predictions")
 plt.show()
 
-# 📊 Residual Distribution
-sns.displot(residuals, kde=True, aspect=2)
-plt.title("Residuals Distribution")
+# 🔹 Distribution of Residuals
+print("Residual mean:", np.mean(residuals))
+print("Residual skewness:", stats.skew(residuals))
+
+sns.displot(residuals, kde=True)
+plt.title("Distribution of Residuals")
 plt.show()
 
-# ➕ Check skewness
-print(f"Residual skewness: {stats.skew(residuals):.3f}")
+# 🔹 Log Transformation of PRICE
+print("Original PRICE skew:", stats.skew(data['PRICE']))
 
-# 🔁 Log-transform the target to reduce skew
-log_y = np.log(y)
+log_price = np.log(data['PRICE'])
 
-# 📊 Visualize log-transformed target
-sns.displot(log_y, kde=True, aspect=2, color='orange')
-plt.title("Log-Transformed Target: PRICE")
+sns.displot(log_price, kde=True, color='orange')
+plt.title("Log-Transformed PRICE Distribution")
+plt.xlabel("log(PRICE)")
 plt.show()
 
-# 🚀 Train model on log-transformed target
-X_train, X_test, log_y_train, log_y_test = train_test_split(X, log_y, test_size=0.2, random_state=10)
+# Log mapping
+plt.scatter(data['PRICE'], log_price)
+plt.xlabel("Original PRICE")
+plt.ylabel("Log PRICE")
+plt.title("Original vs Log PRICE")
+plt.show()
+
+# 🔹 Retrain with Log PRICE
+y_log = log_price
+X_train, X_test, y_log_train, y_log_test = train_test_split(X, y_log, test_size=0.20, random_state=10)
+
 log_model = LinearRegression()
-log_model.fit(X_train, log_y_train)
+log_model.fit(X_train, y_log_train)
 
-# 📊 Evaluate log-model
+print("Log Model R²:", log_model.score(X_train, y_log_train))
+
+# 🔹 Residuals from Log Model
 log_pred = log_model.predict(X_train)
-log_residuals = log_y_train - log_pred
-print(f"Log-model R² score: {log_model.score(X_train, log_y_train):.3f}")
+log_residuals = y_log_train - log_pred
 
-# 🎯 Residuals for log-model
-sns.scatterplot(x=log_pred, y=log_residuals)
-plt.xlabel("Predicted log(PRICE)")
-plt.ylabel("Residuals")
-plt.title("Residuals of Log-Model")
+sns.scatterplot(x=y_log_train, y=log_pred)
+plt.xlabel("Actual Log Prices")
+plt.ylabel("Predicted Log Prices")
+plt.title("Actual vs Predicted (Log Prices)")
 plt.show()
 
-# 🏡 Estimate Price for Average Property
-mean_features = X.mean().values.reshape(1, -1)
-log_estimate = log_model.predict(mean_features)[0]
-dollar_estimate = np.exp(log_estimate) * 1000
-print(f"Estimated average house value: ${dollar_estimate:,.2f}")
+sns.scatterplot(x=log_pred, y=log_residuals)
+plt.xlabel("Predicted Log Prices")
+plt.ylabel("Residuals")
+plt.title("Residuals vs Predictions (Log)")
+plt.show()
 
-# 🧠 Estimate Price for Custom Property
-property_stats = pd.DataFrame(mean_features, columns=X.columns)
-property_stats['CHAS'] = 1               # Close to Charles River
-property_stats['RM'] = 8                 # More rooms
-property_stats['PTRATIO'] = 20           # Reasonable student-teacher ratio
-property_stats['DIS'] = 5                # Moderate distance to employment
-property_stats['NOX'] = data['NOX'].quantile(0.75)  # Higher pollution
-property_stats['LSTAT'] = data['LSTAT'].quantile(0.25)  # Low % lower status
+# 🔹 Compare Model Performances
+print("Original R² (test):", model.score(X_test, y_test))
+print("Log R² (test):", log_model.score(X_test, y_log_test))
 
+# 🔹 Estimate Average Property Price
+property_stats = X.mean().to_frame().T
 log_estimate = log_model.predict(property_stats)[0]
-dollar_estimate = np.exp(log_estimate) * 1000
-print(f"Estimated value for custom property: ${dollar_estimate:,.2f}")
+dollar_est = np.exp(log_estimate) * 1000
+
+print(f"Estimated price of average property: ${dollar_est:,.2f}")
+
+# 🔹 Custom Prediction
+def predict_price(nr_rooms, next_to_river, student_ratio, distance, pollution, poverty):
+    stats = property_stats.copy()
+    stats['RM'] = nr_rooms
+    stats['PTRATIO'] = student_ratio
+    stats['DIS'] = distance
+    stats['CHAS'] = 1 if next_to_river else 0
+    stats['NOX'] = pollution
+    stats['LSTAT'] = poverty
+    
+    log_prediction = log_model.predict(stats)[0]
+    return np.exp(log_prediction) * 1000
+
+# Example:
+prediction = predict_price(
+    nr_rooms=8,
+    next_to_river=True,
+    student_ratio=20,
+    distance=5,
+    pollution=data['NOX'].quantile(0.75),
+    poverty=data['LSTAT'].quantile(0.25)
+)
+
+print(f"Predicted custom property value: ${prediction:,.2f}")
